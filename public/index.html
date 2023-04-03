@@ -305,60 +305,8 @@
 
     // on document load initialize state and register events listeners
     document.addEventListener('DOMContentLoaded', () => {
-        // on document load if api-key is stored in local storage set it to api-key div
-        try {
-            apiKey = localStorage.getItem('api-key');
-            if(apiKey) {
-                document.getElementById('api-key').innerText = apiKey;
-            } else {
-                throw new Error('No api key found');
-            }
-        } catch (error) {
-            console.log(error);
-            document.querySelector('.settings-img').click();
-        }
-        // if tree is stored in local storage set it to tree variable and then call the renderTree function
-        try {
-            const treeString = localStorage.getItem('tree');
-            if(treeString) {
-                Object.assign(tree, JSON.parse(treeString));
-                // set all tree to not rendered other than root node
-                Object.keys(tree).forEach((key, index) => {
-                    if(key != '1') {
-                        tree[key].rendered = false;
-                    }
-                });
-                // set context index to maximum key in tree 
-                context_index = Math.max(...Object.keys(tree).map(key => key * 1));
-                // set node tree prompt value to innerText of the node 1
-                document.getElementById('1').innerText = tree['1'].prompt;
-                renderTree(true);
-            } else {
-                throw new Error('No tree found');
-            }
-        } catch (error) {
-            setMainPromptContent();
-        }
-        // if completions-data is stored in local storage set it to completions-data div
-        try {
-            const completionsData = localStorage.getItem('completions-data');
-            if(completionsData) {
-                document.getElementById('completions-data').innerHTML = completionsData;
-            }
-        } catch (error) {
-            console.log(error);
-        }
-        // if completionsFormattedData is stored in local storage set it to completionsFormattedData variable
-        try {
-            let localCompletionsFormattedData = localStorage.getItem('completionsFormattedData');
-            if(localCompletionsFormattedData) {
-                completionsFormattedData = JSON.parse(localCompletionsFormattedData);
-            }
-            console.log(completionsFormattedData)
-        } catch (error) {
-            console.log(error);
-        }
         // Register events listeners
+        // Overwrite paste event to insert text instead of html
         document.addEventListener('paste', function(event) {
             event.preventDefault();
             const text = event.clipboardData.getData('text/plain');
@@ -465,6 +413,59 @@
             }
             document.getElementById('params-container').classList.toggle('active');
         });
+        // on document load if api-key is stored in local storage set it to api-key div
+        try {
+            apiKey = localStorage.getItem('api-key');
+            if(apiKey) {
+                document.getElementById('api-key').innerText = apiKey;
+            } else {
+                throw new Error('No api key found');
+            }
+        } catch (error) {
+            console.log(error);
+            document.querySelector('.settings-img').click();
+        }
+        // if tree is stored in local storage set it to tree variable and then call the renderTree function
+        try {
+            const treeString = localStorage.getItem('tree');
+            if(treeString) {
+                Object.assign(tree, JSON.parse(treeString));
+                // set all tree to not rendered other than root node
+                Object.keys(tree).forEach((key, index) => {
+                    if(key != '1') {
+                        tree[key].rendered = false;
+                    }
+                });
+                // set context index to maximum key in tree 
+                context_index = Math.max(...Object.keys(tree).map(key => key * 1));
+                // set node tree prompt value to innerText of the node 1
+                document.getElementById('1').innerText = tree['1'].prompt;
+                renderTree(true);
+            } else {
+                throw new Error('No tree found');
+            }
+        } catch (error) {
+            setMainPromptContent();
+        }
+        // if completions-data is stored in local storage set it to completions-data div
+        try {
+            const completionsData = localStorage.getItem('completions-data');
+            if(completionsData) {
+                document.getElementById('completions-data').innerHTML = completionsData;
+            }
+        } catch (error) {
+            console.log(error);
+        }
+        // if completionsFormattedData is stored in local storage set it to completionsFormattedData variable
+        try {
+            let localCompletionsFormattedData = localStorage.getItem('completionsFormattedData');
+            if(localCompletionsFormattedData) {
+                completionsFormattedData = JSON.parse(localCompletionsFormattedData);
+            }
+            console.log(completionsFormattedData)
+        } catch (error) {
+            console.log(error);
+        }
     });
 
 </script>
