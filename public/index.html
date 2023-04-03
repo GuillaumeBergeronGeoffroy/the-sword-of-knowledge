@@ -12,7 +12,7 @@
         <div id="download-button" class="prompt buttons" onclick="downloadTree()"><span>Download (CMD + S)</span></div>
         <img class="settings-img" src="gear.png" />
     </div>
-    <div id='api-key' class="prompt setting-prompt" contenteditable="true">Enter your OpenAI API key here</div>
+    <div id='api-key' class="prompt setting-prompt" contenteditable="true">OpenAI API Key</div>
     <div id='completions-data' class="prompt setting-prompt" contenteditable="true">Completions: 2 <br> Temperature: 1 <br> Model: text-davinci-003 <br> Tokens: 50 <br> Top P: 1 <br> Logprobs: null <br> Stop: \n</div>
     <div id="import-button" class="prompt buttons" onclick="document.getElementById('import-tree').click()">Import (CMD + I)</div>
     <input type="file" id="import-tree" style="display: none;" onchange="importTree(this.files[0])">
@@ -139,7 +139,6 @@
                 renderError(data.error);
                 return;
             }
-            document.getElementById('api-key').innerText = '*********************************************';
             dataChoices = [...dataChoices, ...data.choices];
             console.log(dataChoices)
             // if data.choices filtered by length greater than 10 is not = 2 then relaunch the 
@@ -306,7 +305,6 @@
     // on document load initialize state and register events listeners
     document.addEventListener('DOMContentLoaded', () => {
         // Register events listeners
-        // Overwrite paste event to insert text instead of html
         document.addEventListener('paste', function(event) {
             event.preventDefault();
             const text = event.clipboardData.getData('text/plain');
@@ -355,7 +353,6 @@
         });
         document.getElementById('api-key').addEventListener('focus', function() {
             context = null;
-            document.getElementById('api-key').innerText = apiKey;
         });
         document.getElementById('completions-data').addEventListener('focus', function() {
             context = null;
@@ -409,7 +406,6 @@
                 document.querySelectorAll('.setting-prompt').forEach(setting => {
                     setting.classList.remove('active');
                 });
-                document.getElementById('api-key').innerText = '*********************************************';
             }
             document.getElementById('params-container').classList.toggle('active');
         });
