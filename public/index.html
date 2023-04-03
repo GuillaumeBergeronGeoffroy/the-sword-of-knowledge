@@ -12,7 +12,7 @@
         <div id="download-button" class="prompt buttons" onclick="downloadTree()"><span>Download (CMD + S)</span></div>
         <img class="settings-img" src="gear.png" />
     </div>
-    <div id='api-key' class="prompt setting-prompt" contenteditable="true">OpenAI API Key</div>
+    <div id='api-key' class="prompt setting-prompt" contenteditable="true">Enter OpenAI API Key here</div>
     <div id='completions-data' class="prompt setting-prompt" contenteditable="true">Completions: 2 <br> Temperature: 1 <br> Model: text-davinci-003 <br> Tokens: 50 <br> Top P: 1 <br> Logprobs: null <br> Stop: \n</div>
     <div id="import-button" class="prompt buttons" onclick="document.getElementById('import-tree').click()">Import (CMD + I)</div>
     <input type="file" id="import-tree" style="display: none;" onchange="importTree(this.files[0])">
@@ -22,6 +22,8 @@
 
 <script>
     let tree = {};
+    let treeHistory = [];
+    let treeHistoryIndex = 0;
     let context = null;
     let context_index = 1;
     let apiKey = null;
@@ -107,14 +109,7 @@
             return;
         }
 
-        if(!tree['1'] || context === '1') {
-            tree[context] = {
-                prompt: prompt,
-                rendered: true,
-            }
-        } else {
-            tree[context].prompt = prompt;
-        }
+        tree[context].prompt = prompt;
 
         const requestOptions = {
             method: "POST",
@@ -170,12 +165,13 @@
         });
     }
 
-    function renderTree(init = false) {
+    function renderTree(init = false, history = false) {
 
         let context_parent = null;
         if(!init) {
             context_parent = tree[context].parent;
         }
+
         // Render all unrendered nodes in the tree by grouping siblings in <div class='container container-1'> parent nodes
         Object.keys(tree).forEach((key, index) => { 
             if(!tree[key].rendered) {
@@ -209,6 +205,13 @@
             }
         });
 
+        if(!history) {
+            // add to tree history
+            treeHistory = [...treeHistory, JSON.parse(JSON.stringify(tree))];
+            treeHistoryIndex = treeHistory.length - 1;
+            localStorage.setItem('treeHistory', JSON.stringify(treeHistory));
+        }
+
         try {
             localStorage.setItem('tree', JSON.stringify(tree));
         } catch (error) {
@@ -221,6 +224,20 @@
             behavior: 'smooth'
         });
 
+    }
+
+    const resetTree = () => {
+        Object.keys(tree).forEach((key, index) => {
+            if(key != '1') {
+                tree[key].rendered = false;
+            } else {
+                document.getElementById(key).innerText = tree[key].prompt;
+            }
+        });
+        document.querySelectorAll('.container').forEach(container => {
+            container.remove();
+        });
+        renderTree(true, true);
     }
 
     const renderError = (error, init = false) => {
@@ -238,8 +255,9 @@
     // download tree as json file with name tree.json
     function downloadTree(content) {
       tree = {
+        text: getFullText(),
         tree: tree,
-        text: getFullText()
+        treeHistory: treeHistory,
       }
         download(JSON.stringify(tree), 'tree.json');
     }
@@ -271,6 +289,7 @@
             const fileContent = e.target.result;
             try {
                 tree = JSON.parse(fileContent).tree;
+                treeHistory = JSON.parse(fileContent).treeHistory;
                 // set all tree to not rendered other than root node
                 Object.keys(tree).forEach((key, index) => {
                     if(key != '1') {
@@ -291,7 +310,13 @@
 
     function clearTree() {
         tree = {};
-        localStorage.removeItem('tree');
+        treeHistory = [];
+        try {
+            localStorage.removeItem('tree');
+            localStorage.removeItem('treeHistory');
+        } catch (error) {
+            console.log(error);
+        }
         document.querySelectorAll('.container').forEach(container => {
             container.remove();
         });
@@ -299,17 +324,21 @@
     }
 
     function setMainPromptContent() {
-        document.getElementById('1').innerHTML = "Focus to set context <br><br> CMD + Enter to generate <br><br> CMD + Arrow to nav <br><br> CMD + S to download tree & concatenated text <br><br> CMD + I to import <br><br> CMD + ESC to clear <br><br> Auto-saves to localstorage";
+        let prompt = "Focus to set context \r\r CMD + Enter to generate \r\r CMD + Arrow to nav \r\r CMD + S to download tree & concatenated text \r\r CMD + I to import \r\r CMD + ESC to clear \r\r CMD + Z to undo \r\r CMD + Y to redo \r\r CMD <=> CTRL \r\r Auto-saves to localstorage";
+        document.getElementById('1').innerText = prompt;
+        
+        tree['1'] = {
+            prompt: prompt,
+            rendered: true,
+        }
+
+        treeHistory = [...treeHistory, JSON.parse(JSON.stringify(tree))];
+        treeHistoryIndex = treeHistory.length - 1;
     }
 
     // on document load initialize state and register events listeners
     document.addEventListener('DOMContentLoaded', () => {
         // Register events listeners
-        document.addEventListener('paste', function(event) {
-            event.preventDefault();
-            const text = event.clipboardData.getData('text/plain');
-            document.execCommand('insertHTML', false, text);
-        });
         document.addEventListener('keydown', function(event) {
             if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
                 event.preventDefault();
@@ -347,7 +376,33 @@
                 event.preventDefault();
                 clearTree();
             }
+            // CMD + Z to undo
+            if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
+                event.preventDefault();
+                undo();
+            }
+            // CMD + Y to redo
+            if ((event.metaKey || event.ctrlKey) && event.key === 'y') {
+                event.preventDefault();
+                redo();
+            }
         });
+        // undo function to move tree to tree history previous state
+        function undo() {
+            if(treeHistoryIndex - 1 >= 0) {
+                treeHistoryIndex--;
+                tree = JSON.parse(JSON.stringify(treeHistory[treeHistoryIndex]));
+                resetTree();
+            }                
+        }
+        // redo function to move tree to tree history next state
+        function redo() {
+            if(treeHistoryIndex + 1 < treeHistory.length) {
+                treeHistoryIndex++;
+                tree = JSON.parse(JSON.stringify(treeHistory[treeHistoryIndex]));
+                resetTree();
+            }
+        }
         document.getElementById('1').addEventListener('focus', function() {
             context = '1'
         });
@@ -424,8 +479,12 @@
         // if tree is stored in local storage set it to tree variable and then call the renderTree function
         try {
             const treeString = localStorage.getItem('tree');
+            const treeHistoryString = localStorage.getItem('treeHistory');
             if(treeString) {
-                Object.assign(tree, JSON.parse(treeString));
+                tree = JSON.parse(treeString);
+                if(treeHistoryString) {
+                    treeHistory = JSON.parse(treeHistoryString);
+                }
                 // set all tree to not rendered other than root node
                 Object.keys(tree).forEach((key, index) => {
                     if(key != '1') {
