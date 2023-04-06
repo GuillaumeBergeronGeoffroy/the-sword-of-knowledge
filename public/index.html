@@ -202,7 +202,7 @@
                 div.innerText = tree[key].prompt;
                 div.addEventListener('focus', function() {
                     context = key;
-                    !tree[key].error && addSubmitPrompt(div);
+                    !tree[key].error && addGeneratePrompt(div);
                     // scroll so that element is in view
                     div.scrollIntoView({behavior: "smooth", block: "center", inline: "center"});
                 });
@@ -239,7 +239,7 @@
 
     }
 
-    const addSubmitPrompt = div => {
+    const addGeneratePrompt = div => {
         // remove all divs with class submit-prompt
         document.querySelectorAll('.submit-prompt').forEach(submitPrompt => {
             submitPrompt.remove();
@@ -369,7 +369,7 @@
         document.addEventListener('keydown', function(event) {
             if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
                 event.preventDefault();
-                context && sendPrompt(document.getElementById(context).innerText)
+                context && !tree[context].error && sendPrompt(document.getElementById(context).innerText)
             }
             // on arrow left or right change context by finding key smaller than current context or key higher than current index (since indexes are always increasing)
             if((event.metaKey || event.ctrlKey) && (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
@@ -432,7 +432,7 @@
         }
         document.getElementById('1').addEventListener('focus', function() {
             context = '1'
-            addSubmitPrompt(document.getElementById('1'));
+            addGeneratePrompt(document.getElementById('1'));
         });
         document.getElementById('api-key').addEventListener('focus', function() {
             context = null;
