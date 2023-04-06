@@ -35,6 +35,7 @@
     let context_index = 1;
     let apiKey = null;
     let timer = null;
+    let nodePrompt = null;
     let completionsFormattedData = {
         n: 2,
         temperature: 1,
@@ -199,10 +200,13 @@
                 div.innerText = tree[key].prompt;
                 div.addEventListener('focus', function() {
                     context = key;
-                    !tree[key].error && addGeneratePrompt(div);
+                    tree[key] && !tree[key].error && addGeneratePrompt(div);
                     // scroll so that element is in view
                     div.scrollIntoView({behavior: "smooth", block: "center", inline: "center"});
                 });
+                div.addEventListener('input', handleInput);
+                // add paste event listener
+                div.addEventListener('paste', handlePaste);
                 // if error add error class
                 if(tree[key].error) {
                     div.classList.add('error');
@@ -307,7 +311,11 @@
     }
 
     function getVisibleText( node ) {
-        if( node.nodeType === Node.TEXT_NODE ) return node.textContent;
+        if( node.nodeType === Node.TEXT_NODE ) {
+            return node.textContent
+        } else if (node.tagName == "BR") {
+            return '\r';
+        }
         var style = getComputedStyle( node );
         if( style && style.position === 'absolute' ) return '';
         var text = '';
@@ -334,7 +342,7 @@
                 // set context index to maximum key in tree 
                 context_index = Math.max(...Object.keys(tree).map(key => key * 1));
                 // set node tree prompt value to innerText of the node 1
-                document.getElementById('1').innerText = tree['1'].prompt;
+                nodePrompt.innerText = tree['1'].prompt;
                 renderTree(true);
             } catch (error) {
                 console.log(error);
@@ -359,8 +367,8 @@
     }
 
     function setMainPromptContent() {
-        let prompt = "Focus to set context \r\r CMD + Enter to generate \r\r CMD + Arrow to nav \r\r CMD + S to download tree & concatenated text \r\r CMD + I to import \r\r CMD + ESC to clear \r\r CMD + Z to undo \r\r CMD + Y to redo \r\r CMD <=> CTRL \r\r Auto-saves to localstorage";
-        document.getElementById('1').innerText = prompt;
+        let prompt = "Focus to set context \n\n CMD + Enter to generate \n\n CMD + Arrow to nav \n\n CMD + S to download tree & concatenated text \n\n CMD + I to import \n\n CMD + ESC to clear \n\n CMD + Z to undo \n\n CMD + Y to redo \n\n CMD <=> CTRL \n\n Auto-saves to localstorage";
+        nodePrompt.innerText = prompt;
         tree['1'] = {
             prompt: prompt,
             rendered: true,
@@ -368,6 +376,25 @@
 
         treeHistory = [...treeHistory, JSON.parse(JSON.stringify(tree))];
         treeHistoryIndex = treeHistory.length - 1;
+    }
+
+    function handleInput(event) {
+        const divElement = event.target;
+        const spanElement = divElement.querySelector('.submit-prompt');
+
+        // Check if the div is empty other than the span
+        if (divElement.childNodes.length === 1 && divElement.childNodes[0] === spanElement) {
+            // Remove the span element from the div
+            spanElement && divElement.removeChild(spanElement);
+        } else {
+            addGeneratePrompt(divElement);
+        }
+    }
+
+    function handlePaste(event) {
+        const divElement = event.target;
+        const spanElement = divElement.querySelector('.submit-prompt');
+        spanElement && divElement.removeChild(spanElement);
     }
 
     // on document load initialize state and register events listeners
@@ -437,10 +464,14 @@
                 resetTree();
             }
         }
-        document.getElementById('1').addEventListener('focus', function() {
+        
+        nodePrompt = document.getElementById('1');
+        nodePrompt.addEventListener('focus', function() {
             context = '1'
-            addGeneratePrompt(document.getElementById('1'));
+            addGeneratePrompt(nodePrompt);
         });
+        nodePrompt.addEventListener('input', handleInput);
+        nodePrompt.addEventListener('paste', handlePaste);
         document.getElementById('api-key').addEventListener('focus', function() {
             context = null;
         });
@@ -529,7 +560,7 @@
                 // set context index to maximum key in tree 
                 context_index = Math.max(...Object.keys(tree).map(key => key * 1));
                 // set node tree prompt value to innerText of the node 1
-                document.getElementById('1').innerText = tree['1'].prompt;
+                nodePrompt.innerText = tree['1'].prompt;
                 renderTree(true);
             } else {
                 throw new Error('No tree found');
@@ -662,10 +693,10 @@
       filter:brightness(1.5);
     }
     #api-key {
-      background: #023e7d;
+      background: #f43636;
     }
     #completions-data {
-      background: #571089;;
+      background: #0084ecab;;
     }
     #clear-button, .error {
         background: #9e0f0f;
