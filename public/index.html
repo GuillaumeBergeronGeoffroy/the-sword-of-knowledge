@@ -7,13 +7,20 @@
 </head>
 <body>
     <div id="1" class="prompt master" contenteditable="true"></div>
-    <!-- add download prompt -->
     <div id='params-container'>
         <div id="download-button" class="prompt buttons" onclick="downloadTree()"><span>Download (CMD + S)</span></div>
         <img class="settings-img" src="gear.png" />
     </div>
     <div id='api-key' class="prompt setting-prompt" contenteditable="true">Enter OpenAI API Key here</div>
-    <div id='completions-data' class="prompt setting-prompt" contenteditable="true">Completions: 2 <br> Temperature: 1 <br> Model: text-davinci-003 <br> Tokens: 50 <br> Top P: 1 <br> Logprobs: null <br> Stop: \n</div>
+    <div id='completions-data' class="prompt setting-prompt" contenteditable="true">
+        Completions: 2 <br> 
+        Temperature: 1 <br> 
+        Model: text-davinci-003 <br> 
+        Tokens: 50 <br> 
+        Top P: 1 <br> 
+        Logprobs: null <br> 
+        Stop: \n
+    </div>
     <div id="import-button" class="prompt buttons" onclick="document.getElementById('import-tree').click()">Import (CMD + I)</div>
     <input type="file" id="import-tree" style="display: none;" onchange="importTree(this.files[0])">
     <div id="clear-button" class="prompt buttons" onclick="clearTree()">Clear (CMD + ESC)</div>
@@ -109,6 +116,9 @@
             return;
         }
 
+        // trim the word generate from the end of the prompt
+        prompt = prompt.substring(0, prompt.length - 8);
+
         tree[context].prompt = prompt;
 
         const requestOptions = {
@@ -192,6 +202,9 @@
                 div.innerText = tree[key].prompt;
                 div.addEventListener('focus', function() {
                     context = key;
+                    addSubmitPrompt(div);
+                    // scroll to top of div
+                    div.scrollIntoView({behavior: "smooth", block: "start", inline: "nearest"});
                 });
                 // if error add error class
                 if(tree[key].error) {
@@ -224,6 +237,21 @@
             behavior: 'smooth'
         });
 
+    }
+
+    const addSubmitPrompt = div => {
+        // remove all divs with class submit-prompt
+        document.querySelectorAll('.submit-prompt').forEach(submitPrompt => {
+            submitPrompt.remove();
+        });
+        let submitPrompt = document.createElement('div');
+        submitPrompt.classList.add('submit-prompt');
+        submitPrompt.innerText = 'Generate';
+        submitPrompt.contentEditable = false;
+        submitPrompt.addEventListener('click', function() {
+            sendPrompt(document.getElementById(context).innerText);
+        });
+        div.appendChild(submitPrompt);
     }
 
     const resetTree = () => {
@@ -326,7 +354,6 @@
     function setMainPromptContent() {
         let prompt = "Focus to set context \r\r CMD + Enter to generate \r\r CMD + Arrow to nav \r\r CMD + S to download tree & concatenated text \r\r CMD + I to import \r\r CMD + ESC to clear \r\r CMD + Z to undo \r\r CMD + Y to redo \r\r CMD <=> CTRL \r\r Auto-saves to localstorage";
         document.getElementById('1').innerText = prompt;
-        
         tree['1'] = {
             prompt: prompt,
             rendered: true,
@@ -405,6 +432,7 @@
         }
         document.getElementById('1').addEventListener('focus', function() {
             context = '1'
+            addSubmitPrompt(document.getElementById('1'));
         });
         document.getElementById('api-key').addEventListener('focus', function() {
             context = null;
@@ -526,6 +554,9 @@
 </script>
 
 <style>
+    *::-webkit-scrollbar {
+        display: none;
+    }
     *:focus {
         outline: none;
     }
@@ -543,17 +574,47 @@
         border-radius: 5px;
         border: 5px solid black;
         padding: 10px;
-        font-size: 20px;
+        font-size: 18px;
         max-width:33%;
-        background: #16543e;
+        background: #1c1c1cd6;
         color: #FFF;
-        font-family: monospace;
+        font-family: 'Courier New', Courier, monospace;
+        /* font-weight: 1000; */
         transition: all 0.5s;
+        position:relative;
+        overflow-wrap: break-word;
     }
     /* different filter effects */
     .prompt:focus {
         filter: brightness(1.2);
         border-color: #ffffff85;
+        padding-bottom:60px;
+    }
+    .submit-prompt {
+        pointer-events: none;
+        opacity: 0;
+        transition: all 1.5s;
+        position:absolute;
+        text-align: center;
+        width: calc(100% - 40px);
+        padding: 10px;
+        background: #000;
+        left: 10px;
+        bottom:10px;
+        cursor:pointer;
+        border-radius: 5px;
+        font-size:16px;
+        -webkit-user-select: none; /* Safari */
+        -ms-user-select: none; /* IE 10 and IE 11 */
+        user-select: none; /* Standard syntax */
+    }
+    .prompt:focus .submit-prompt {
+        pointer-events: auto;
+        opacity:0.75;
+    }
+    .prompt:focus .submit-prompt:hover {
+      filter:brightness(1.5);
+      opacity:1;
     }
     .prompt:not(.container .prompt) {
         margin:auto;
@@ -610,13 +671,20 @@
     .setting-prompt.active {
         opacity:1;
         height:auto;
-        font-size:20px;
+        font-size:17px;
         border: 5px solid black;
         padding:10px;
     }
     @media only screen and (max-width: 1000px) {
+        .container .prompt {
+            width: 100%;
+        }
         .prompt, #params-container {
             max-width: unset;
+        }
+        .container {
+            justify-content: start;
+            overflow:scroll;
         }
     }
 </style>
