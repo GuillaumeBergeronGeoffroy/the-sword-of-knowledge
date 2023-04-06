@@ -203,8 +203,8 @@
                 div.addEventListener('focus', function() {
                     context = key;
                     addSubmitPrompt(div);
-                    // scroll to top of div
-                    div.scrollIntoView({behavior: "smooth", block: "start", inline: "nearest"});
+                    // scroll so that element is in view
+                    div.scrollIntoView({behavior: "smooth", block: "center", inline: "center"});
                 });
                 // if error add error class
                 if(tree[key].error) {
