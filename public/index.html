@@ -204,9 +204,9 @@
                     // scroll so that element is in view
                     div.scrollIntoView({behavior: "smooth", block: "center", inline: "center"});
                 });
-                div.addEventListener('input', handleInput);
+                tree[key] && !tree[key].error && div.addEventListener('input', handleInput);
                 // add paste event listener
-                div.addEventListener('paste', handlePaste);
+                tree[key] && !tree[key].error && div.addEventListener('paste', handlePaste);
                 // if error add error class
                 if(tree[key].error) {
                     div.classList.add('error');
